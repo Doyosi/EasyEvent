@@ -45,7 +45,7 @@ class EasyEventFactory extends Factory
         ];
     }
 
-    // Handy states
+    // ---- States ----
     public function published(): static { return $this->state(fn () => ['status' => 'published']); }
     public function draft(): static     { return $this->state(fn () => ['status' => 'draft']); }
     public function archived(): static  { return $this->state(fn () => ['status' => 'archived']); }
@@ -80,5 +80,17 @@ class EasyEventFactory extends Factory
             $d = Carbon::instance(fake()->dateTimeBetween('-10 days', '+30 days'))->startOfDay();
             return ['all_day' => true, 'starts_at' => $d, 'ends_at' => $d->copy()->endOfDay()];
         });
+    }
+
+    /** Set a specific type */
+    public function type(string $type): static
+    {
+        return $this->state(fn () => ['type' => $type]);
+    }
+
+    /** Optional: generic status() helper */
+    public function status(string $status): static
+    {
+        return $this->state(fn () => ['status' => $status]);
     }
 }
