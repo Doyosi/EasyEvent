@@ -82,7 +82,7 @@ class EasyEventController extends Controller
     /**
      * GET /api/easy-events/{event}
      */
-    public function show(Event $event)
+    public function show(EasyEvent $event)
     {
         abort_unless($event->status === 'published', 404);
         EventResource::withoutWrapping();

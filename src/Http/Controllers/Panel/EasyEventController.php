@@ -30,12 +30,12 @@ class EasyEventController extends Controller
             ->with('status', 'Event created.');
     }
 
-    public function edit(Event $event)
+    public function edit(EasyEvent $event)
     {
         return view('easy-event::panel.index', compact('event'));
     }
 
-    public function update(Request $request, Event $event)
+    public function update(Request $request, EasyEvent $event)
     {
         $data = $this->validated($request);
         $event->update($data);
@@ -43,7 +43,7 @@ class EasyEventController extends Controller
             ->with('status', 'Event updated.');
     }
 
-    public function destroy(Event $event)
+    public function destroy(EasyEvent $event)
     {
         $event->delete();
         return redirect()->route('panel.easy-events.index')
