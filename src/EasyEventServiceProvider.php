@@ -35,11 +35,14 @@ class EasyEventServiceProvider extends ServiceProvider
                 __DIR__ . '/../resources/js' => resource_path('js'),
             ], 'easy-event-assets');
 
+            // Make package factories discoverable to the app
+            $this->loadFactoriesFrom(__DIR__ . '/../database/factories');
 
             $this->commands([
                 InstallCommand::class,
             ]);
         }
+
 
         // Auto-load routes if enabled
         if (config('easy-event.routes.web.enabled')) {

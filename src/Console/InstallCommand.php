@@ -11,6 +11,7 @@ class InstallCommand extends Command
     protected $signature = 'doyosi:event
         {--install : Publish config & migrations and run migrate}
         {--vite : Publish JS assets and patch vite.config.js}
+        {--seed : Seed sample events after install/migrate}
         {--run-npm= : Optionally run an npm command, e.g. "dev" or "build"}
         {--uninstall : Remove Vite wiring, scaffolds, and optionally app artifacts}
         {--purge : With --uninstall, also delete published config and migrations}
@@ -36,6 +37,9 @@ class InstallCommand extends Command
 
         if ($this->option('install')) {
             $this->doInstall();
+            if ($this->option('seed')) {
+                $this->seedSamples();
+            }
         }
 
         if ($this->option('vite')) {
@@ -394,5 +398,12 @@ class InstallCommand extends Command
     protected function rel(string $abs): string
     {
         return str_replace(base_path() . DIRECTORY_SEPARATOR, '', $abs);
+    }
+
+    protected function seedSamples(): void
+    {
+        $class = 'Doyosi\\EasyEvent\\Database\\Seeders\\EasyEventSeeder';
+        $this->call('db:seed', ['--class' => $class]);
+        $this->info('✓ Seeded sample events');
     }
 }
