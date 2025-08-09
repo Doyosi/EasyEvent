@@ -10,7 +10,7 @@ class InstallCommand extends Command
 {
     protected $signature = 'doyosi:event
         {--install : Publish config & migrations and run migrate}
-        {--vite : Patch vite.config.js and scaffold JS files}
+        {--vite : Publish JS assets and patch vite.config.js}
         {--run-npm= : Optionally run an npm command, e.g. "dev" or "build"}
         {--uninstall : Remove Vite wiring, scaffolds, and optionally app artifacts}
         {--purge : With --uninstall, also delete published config and migrations}
@@ -21,25 +21,19 @@ class InstallCommand extends Command
 
     protected $description = 'Install / uninstall Doyosi EasyEvent and manage Vite wiring.';
 
-    /**
-     * Tracks if we already created a vite.config.js backup this run.
-     */
     protected bool $didViteBackup = false;
 
     public function handle(): int
     {
-        // guard: mutually exclusive
         if ($this->option('install') && $this->option('uninstall')) {
             $this->error('Choose either --install or --uninstall.');
             return self::INVALID;
         }
 
-        // UNINSTALL
         if ($this->option('uninstall')) {
             return $this->uninstall();
         }
 
-        // INSTALL
         if ($this->option('install')) {
             $this->doInstall();
         }
@@ -48,10 +42,9 @@ class InstallCommand extends Command
             $this->wireVite();
         }
 
-        // RESTORE VITE INPUTS FROM MANIFEST
         $restoreOpt = $this->option('restore-vite');
         if ($restoreOpt !== null) {
-            $path = $restoreOpt ?: base_path('doyosi.vite.json'); // default if passed without value
+            $path = $restoreOpt ?: base_path('doyosi.vite.json');
             $this->restoreViteFromManifest($path);
         }
 
@@ -90,34 +83,23 @@ class InstallCommand extends Command
 
     protected function wireVite(): void
     {
-        $this->scaffoldJs();
-        $this->patchViteConfig();
-        $this->info('✓ Vite wired (JS scaffolded + vite.config.js patched if possible)');
+        $this->publishAssets();       // <-- copy JS from package resources to app resources
+        $this->patchViteConfig();     // <-- add entry to vite.config.js if missing
+        $this->info('✓ Vite wired (assets published + vite.config.js patched if possible)');
         $this->line('   Next: run "npm run dev" (or pass --run-npm=dev).');
     }
 
-    protected function scaffoldJs(): void
+    protected function publishAssets(): void
     {
-        $entry = base_path('resources/js/easy-event.js');
-        $moduleDir = base_path('resources/js/modules');
-        $module = $moduleDir . '/EasyEventWidget.js';
+        $this->callSilent('vendor:publish', [
+            '--provider' => "Doyosi\\EasyEvent\\EasyEventServiceProvider",
+            '--tag'      => 'easy-event-assets',
+            '--force'    => false, // keep user's edits if they re-run
+        ]);
 
-        if (! is_dir(dirname($entry))) @mkdir(dirname($entry), 0777, true);
-        if (! is_dir($moduleDir)) @mkdir($moduleDir, 0777, true);
-
-        if (! file_exists($module)) {
-            file_put_contents($module, $this->easyEventWidgetJs());
-            $this->info('  ├─ Created: resources/js/modules/EasyEventWidget.js');
-        } else {
-            $this->line('  ├─ Skipped (exists): resources/js/modules/EasyEventWidget.js');
-        }
-
-        if (! file_exists($entry)) {
-            file_put_contents($entry, $this->easyEventEntryJs());
-            $this->info('  └─ Created: resources/js/easy-event.js');
-        } else {
-            $this->line('  └─ Skipped (exists): resources/js/easy-event.js');
-        }
+        // Friendly hints about where files landed
+        $this->line('  ├─ Copied: resources/js/easy-event.js');
+        $this->line('  └─ Copied: resources/js/modules/EasyEventWidget.js');
     }
 
     protected function patchViteConfig(): void
@@ -256,7 +238,6 @@ class InstallCommand extends Command
                 @unlink($file);
                 $this->info("  ✓ Deleted {$this->rel($file)}");
             } else {
-                // Keep user-modified files; move aside to .bak
                 $bak = $file . '.bak';
                 @rename($file, $bak);
                 $this->warn("  • Detected custom changes. Moved to: {$this->rel($bak)}");
@@ -321,7 +302,6 @@ class InstallCommand extends Command
 
         $content = file_get_contents($vite);
 
-        // If manifest missing → bootstrap one from current inputs and stop.
         if (! file_exists($manifestPath)) {
             $current = $this->extractViteInputs($content);
             $this->writeViteManifest($manifestPath, $current);
@@ -342,7 +322,6 @@ class InstallCommand extends Command
             return;
         }
 
-        // Build pretty array and replace first input: [...] occurrence.
         $quoted = array_map(fn($p) => "'".$p."'", $list);
         $pretty = "\n        " . implode(",\n        ", $quoted) . "\n      ";
 
@@ -384,10 +363,6 @@ class InstallCommand extends Command
      * BACKUP
      * ========================= */
 
-    /**
-     * Backup vite.config.js once per run when --backup is passed.
-     * Creates vite.config.js.YYYYmmdd-HHMMSS.bak in project root.
-     */
     protected function backupViteConfig(): void
     {
         if ($this->didViteBackup || ! $this->option('backup')) return;
@@ -410,93 +385,11 @@ class InstallCommand extends Command
     }
 
     /* =========================
-     * JS STUBS + MARKERS
+     * MARKERS & UTILS
      * ========================= */
 
     protected function easyEventEntryMarker(): string { return '//@DOYOSI_EASY_EVENT_STUB_ENTRY'; }
     protected function easyEventWidgetMarker(): string { return '//@DOYOSI_EASY_EVENT_STUB_WIDGET'; }
-
-    protected function easyEventEntryJs(): string
-    {
-        $marker = $this->easyEventEntryMarker();
-        return <<<JS
-{$marker}
-/**
- * EasyEvent front-end entry
- * Load with: @vite('resources/js/easy-event.js')
- */
-import { EasyEventWidget } from './modules/EasyEventWidget'
-
-document.addEventListener('DOMContentLoaded', () => {
-  const els = document.querySelectorAll('[data-easy-event]')
-  els.forEach(el => {
-    const limit = Number(el.getAttribute('data-limit') || 5)
-    const endpoint = el.getAttribute('data-endpoint') || '/api/easy-events'
-    const w = new EasyEventWidget({ target: el, endpoint, limit })
-    w.init()
-  })
-})
-
-window.DoyosiEasyEventWidget = EasyEventWidget
-JS;
-    }
-
-    protected function easyEventWidgetJs(): string
-    {
-        $marker = $this->easyEventWidgetMarker();
-        return <<<JS
-{$marker}
-/**
- * EasyEventWidget
- * Render a small event list.
- *
- * @param {Object} options
- * @param {string|HTMLElement} options.target
- * @param {string} [options.endpoint='/api/easy-events']
- * @param {number} [options.limit=5]
- *
- * @example
- * import { EasyEventWidget } from '@/modules/EasyEventWidget'
- * const widget = new EasyEventWidget({ target: '#eventsBox', limit: 10 })
- * widget.init()
- */
-export class EasyEventWidget {
-  constructor({ target, endpoint = '/api/easy-events', limit = 5 } = {}) {
-    this.el = typeof target === 'string' ? document.querySelector(target) : target
-    this.endpoint = endpoint
-    this.limit = limit
-  }
-
-  async init() {
-    if (!this.el) return
-    const events = await this.fetchEvents()
-    this.render(events.slice(0, this.limit))
-  }
-
-  async fetchEvents() {
-    try {
-      const res = await fetch(this.endpoint, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      if (!res.ok) throw new Error('Failed to load events')
-      return await res.json()
-    } catch (e) {
-      console.error('[EasyEventWidget]', e)
-      return []
-    }
-  }
-
-  render(items) {
-    this.el.innerHTML = items.length
-      ? \`<ul class="space-y-2">\${items.map(i => \`
-           <li class="p-3 rounded border">
-             <div class="font-semibold">\${i.title}</div>
-             <div class="text-sm opacity-70">\${i.starts_at ?? ''}</div>
-           </li>
-         \`).join('')}</ul>\`
-      : '<div class="p-3 text-sm opacity-70">No events.</div>'
-  }
-}
-JS;
-    }
 
     protected function rel(string $abs): string
     {

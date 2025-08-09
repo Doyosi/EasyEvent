@@ -30,6 +30,12 @@ class EasyEventServiceProvider extends ServiceProvider
                 __DIR__ . '/../database/migrations/' => database_path('migrations'),
             ], 'easy-event-migrations');
 
+            // NEW: publish JS assets into the app's resources/js
+            $this->publishes([
+                __DIR__ . '/../resources/js' => resource_path('js'),
+            ], 'easy-event-assets');
+
+
             $this->commands([
                 InstallCommand::class,
             ]);
