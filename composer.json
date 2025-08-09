@@ -1,5 +1,5 @@
 {
-  "name": "Doyosi/EasyEvent",
+  "name": "doyosi/easy-event",
   "description": "Simple, extensible event manager for Laravel.",
   "type": "library",
   "license": "MIT",
