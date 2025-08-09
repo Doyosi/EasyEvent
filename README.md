@@ -49,6 +49,8 @@ php artisan doyosi:event --install --vite --run-npm=dev
 php artisan db:seed --class="Doyosi\EasyEvent\Database\Seeders\EasyEventSeeder"
 # or during install:
 php artisan doyosi:event --install --seed
+```
+
 
 Publish manually (optional):
 
