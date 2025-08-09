@@ -1,0 +1,185 @@
+openapi: 3.0.3
+info:
+  title: Doyosi EasyEvent API
+  version: 0.1.0
+  description: |
+    Read-only JSON API for events. Default routes are configurable; this spec assumes:
+    - List: `GET /api/easy-events`
+    - Show: `GET /api/easy-events/{event}`
+  license:
+    name: MIT
+  contact:
+    name: Doyosi
+servers:
+  - url: /
+    description: Relative to your Laravel host
+  - url: http://localhost
+    description: Local development
+
+tags:
+  - name: EasyEvents
+    description: Public event endpoints
+
+paths:
+  /api/easy-events:
+    get:
+      tags: [EasyEvents]
+      summary: List events
+      description: |
+        Returns events as an **array** by default (no wrapper). If `paginate=1`, returns a paginator object with `data`, `links`, and `meta`.
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100 }
+          description: Return at most N items (disables pagination)
+        - in: query
+          name: paginate
+          schema: { type: integer, enum: [0,1] }
+          description: Enable paginator response (default from server config)
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 200 }
+          description: Items per page when `paginate=1`
+        - in: query
+          name: scope
+          schema: { type: string, enum: [today, month, upcoming, past] }
+          description: Predefined time window
+        - in: query
+          name: type
+          schema: { type: string }
+          description: Filter by event type
+        - in: query
+          name: status
+          schema: { type: string, enum: [draft, published, archived] }
+          description: Filter by status (default is published)
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+          description: Start of explicit range
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+          description: End of explicit range (must be with `from`)
+      responses:
+        '200':
+          description: A list of events (array) **or** a paginated object
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+                  - $ref: '#/components/schemas/PaginatedEventList'
+              examples:
+                array_default:
+                  summary: Array response (no wrapper)
+                  value:
+                    - { id: 1, type: webinar, title: "Intro", starts_at: "2025-08-15T10:00:00+03:00", ends_at: "2025-08-15T11:00:00+03:00", all_day: false, status: published, meta: {} }
+                    - { id: 2, type: workshop, title: "Hands-on", starts_at: "2025-08-20T14:00:00+03:00", ends_at: "2025-08-20T16:00:00+03:00", all_day: false, status: published, meta: {} }
+                paginated:
+                  summary: Paginated response
+                  value:
+                    data:
+                      - { id: 3, type: webinar, title: "Advanced", starts_at: "2025-09-01T10:00:00+03:00", ends_at: "2025-09-01T11:00:00+03:00", all_day: false, status: published, meta: {} }
+                    links:
+                      first: "http://localhost/api/easy-events?page=1"
+                      last: "http://localhost/api/easy-events?page=5"
+                      prev: null
+                      next: "http://localhost/api/easy-events?page=2"
+                    meta:
+                      current_page: 1
+                      from: 1
+                      last_page: 5
+                      path: "http://localhost/api/easy-events"
+                      per_page: 15
+                      to: 15
+                      total: 75
+
+  /api/easy-events/{event}:
+    get:
+      tags: [EasyEvents]
+      summary: Show a single event
+      parameters:
+        - in: path
+          name: event
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+              example:
+                id: 1
+                event_id: null
+                type: webinar
+                title: Intro to EasyEvent
+                description: "Join us to explore the package."
+                starts_at: "2025-08-15T10:00:00+03:00"
+                ends_at: "2025-08-15T11:00:00+03:00"
+                starts_at_formatted: "2025-08-15 10:00"
+                ends_at_formatted: "2025-08-15 11:00"
+                all_day: false
+                location: Online
+                status: published
+                meta: {}
+        '404':
+          description: Not found or not published
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Event:
+      type: object
+      required: [id, type, title, starts_at, all_day, status]
+      properties:
+        id: { type: integer }
+        event_id: { type: string, nullable: true }
+        type: { type: string, example: webinar }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        starts_at: { type: string, format: date-time, nullable: true }
+        ends_at: { type: string, format: date-time, nullable: true }
+        starts_at_formatted: { type: string, nullable: true }
+        ends_at_formatted: { type: string, nullable: true }
+        all_day: { type: boolean }
+        location: { type: string, nullable: true }
+        status: { type: string, enum: [draft, published, archived] }
+        meta:
+          type: object
+          additionalProperties: true
+          example: {}
+
+    PaginatedEventList:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Event' }
+        links:
+          type: object
+          properties:
+            first: { type: string, nullable: true }
+            last: { type: string, nullable: true }
+            prev: { type: string, nullable: true }
+            next: { type: string, nullable: true }
+        meta:
+          type: object
+          properties:
+            current_page: { type: integer }
+            from: { type: integer, nullable: true }
+            last_page: { type: integer }
+            path: { type: string }
+            per_page: { type: integer }
+            to: { type: integer, nullable: true }
+            total: { type: integer }
+
+security: []  # enable `[ { bearerAuth: [] } ]` if you add auth middleware
