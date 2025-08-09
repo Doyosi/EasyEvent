@@ -1,0 +1,33 @@
+{
+  "name": "Doyosi/EasyEvent",
+  "description": "Simple, extensible event manager for Laravel.",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Doyosi\\EasyEvent\\": "src/"
+    },
+    "files": [
+      "src/helpers.php"
+    ]
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Doyosi\\EasyEvent\\EasyEventServiceProvider"
+      ],
+      "aliases": {
+        "EasyEvent": "Doyosi\\EasyEvent\\Facades\\EasyEvent"
+      }
+    }
+  },
+    "require": {
+      "php": "^8.2",
+      "illuminate/support": "^12.0",
+      "illuminate/database": "^12.0",
+      "illuminate/console": "^12.0",
+      "illuminate/routing": "^12.0",
+      "illuminate/view": "^12.0",
+      "illuminate/http": "^12.0"
+    }
+}
