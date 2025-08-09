@@ -21,19 +21,19 @@
 Add via Composer (packagist or path repo):
 
 ```bash
-composer require doyosi/easy-event
+composer require Doyosi/EasyEvent
 ```
 
 Or local dev (example):
 
 ```json
 {
-  "repositories": [ { "type": "path", "url": "packages/doyosi/easy-event" } ]
+  "repositories": [ { "type": "path", "url": "packages/Doyosi/EasyEvent" } ]
 }
 ```
 
 ```bash
-composer require doyosi/easy-event:"*@dev"
+composer require Doyosi/EasyEvent:"*@dev"
 ```
 
 Install assets + DB:
