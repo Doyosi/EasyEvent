@@ -73,4 +73,9 @@ class EasyEvent extends Model
     {
         return $q->between(now()->startOfMonth(), now()->endOfMonth());
     }
+
+    protected static function newFactory()
+    {
+        return \Doyosi\EasyEvent\Database\Factories\EasyEventFactory::new();
+    }
 }
