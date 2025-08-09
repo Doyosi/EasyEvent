@@ -2,12 +2,15 @@
 
 namespace Doyosi\EasyEvent\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+// hasFactory is not used in this file, so it can be removed
 
 class EasyEvent extends Model
 {
+    use HasFactory;
     protected $table;
     protected $guarded = [];
 
