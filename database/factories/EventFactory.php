@@ -28,15 +28,24 @@ class EasyEventFactory extends Factory
             $end   = $start->copy()->endOfDay();
         }
 
+        $fallbackLang = config('app.fallback_locale', 'en');
+        $title = $this->faker->sentence(3, true);
+        $description = $this->faker->boolean(70) ? $this->faker->paragraph() : null;
+        $location = $this->faker->boolean(60) ? $this->faker->city() : null;
+
+        $arrayTitle = [$fallbackLang => $title];
+        $arrayDescription = $description ? [$fallbackLang => $description] : null;
+        $arrayLocation = $location ? [$fallbackLang => $location] : null;
+
         return [
             'event_id'    => $this->faker->boolean(40) ? (string) Str::uuid() : null,
             'type'        => $this->faker->randomElement($types),
-            'title'       => ucfirst($this->faker->words(3, true)),
-            'description' => $this->faker->boolean(70) ? $this->faker->paragraph() : null,
+            'title'       => $arrayTitle,
+            'description' => $arrayDescription,
             'starts_at'   => $start,
             'ends_at'     => $end,
             'all_day'     => $allDay,
-            'location'    => $this->faker->boolean(60) ? $this->faker->city() : null,
+            'location'    => $arrayLocation,
             'status'      => $this->faker->randomElement($statuses),
             'meta'        => [
                 'speaker'  => $this->faker->name(),

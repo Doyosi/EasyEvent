@@ -13,12 +13,12 @@ return new class extends Migration {
             $table->id();
             $table->string('event_id')->nullable()->index(); // external id if needed
             $table->string('type')->index();                 // e.g., webinar, meeting
-            $table->string('title');
-            $table->text('description')->nullable();
+            $table->json('title')->nullable();
+            $table->json('description')->nullable();
             $table->dateTime('starts_at')->index();
             $table->dateTime('ends_at')->nullable()->index();
             $table->boolean('all_day')->default(false);
-            $table->string('location')->nullable();
+            $table->json('location')->nullable();
             $table->string('status')->default('draft')->index(); // draft|published|archived
             $table->json('meta')->nullable();
             $table->timestamps();

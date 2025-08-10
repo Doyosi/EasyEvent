@@ -22,6 +22,7 @@ class EasyEventController extends Controller
      * - type (string)      : filter by type
      * - status (string)    : filter by status
      * - from, to (date/dt) : between range (overrides scope when both given)
+     * - lang (string)      : optional language code for translations
      */
     public function index(Request $request)
     {
@@ -36,6 +37,7 @@ class EasyEventController extends Controller
             'status'    => ['nullable', 'string', Rule::in(config('easy-event.status', ['draft','published','archived']))],
             'from'      => ['nullable', 'date'],
             'to'        => ['nullable', 'date'],
+            'lang'      => ['nullable', 'string', 'max:5'], // optional language code for translations
         ]);
 
         $q = EasyEvent::query()->published()->orderBy('starts_at');
@@ -45,6 +47,11 @@ class EasyEventController extends Controller
         }
         if (!empty($validated['type'])) {
             $q->type($validated['type']);
+        }
+
+        // Filter by language if provided
+        if (!empty($validated['lang'])) {
+            app()->setLocale($validated['lang']);
         }
 
         // explicit range beats scope

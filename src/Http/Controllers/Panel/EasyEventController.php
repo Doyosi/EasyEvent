@@ -55,12 +55,17 @@ class EasyEventController extends Controller
         return $request->validate([
             'event_id'   => ['nullable', 'string', 'max:191'],
             'type'       => ['required', 'string', Rule::in(config('easy-event.types'))],
-            'title'      => ['required', 'string', 'max:255'],
-            'description'=> ['nullable', 'string'],
+
+            'title'       => ['required', 'array'],   // translatable
+            'title.*'     => ['string'],
+            'description' => ['nullable', 'array'],   // translatable
+            'description.*'=> ['string'],
+            'location'    => ['nullable', 'array'],   // translatable
+            'location.*'  => ['string'],
+
             'starts_at'  => ['required', 'date'],
             'ends_at'    => ['nullable', 'date', 'after_or_equal:starts_at'],
             'all_day'    => ['boolean'],
-            'location'   => ['nullable', 'string', 'max:255'],
             'status'     => ['required', 'string', Rule::in(config('easy-event.status'))],
             'meta'       => ['nullable', 'array'],
         ]);

@@ -40,6 +40,9 @@ class InstallCommand extends Command
             if ($this->option('seed')) {
                 $this->seedSamples();
             }
+            if ($this->option('seed-lang')) {
+                $this->seedLanguageLines();
+            }
         }
 
         if ($this->option('vite')) {
@@ -67,6 +70,21 @@ class InstallCommand extends Command
 
     protected function doInstall(): void
     {
+        if (! class_exists(\Spatie\Translatable\HasTranslations::class)) {
+            $this->error('Missing dependency: spatie/laravel-translatable');
+            $this->line('Install it with:');
+            $this->line('  composer require spatie/laravel-translatable:^6.0');
+            // Hard fail so CI or scripted installs stop here
+            exit(self::FAILURE);
+        }
+
+        if (! class_exists(\Spatie\TranslationLoader\LanguageLine::class)) {
+            $this->error('Spatie Translation Loader not installed.');
+            $this->line('  Install with: composer require spatie/laravel-translation-loader');
+            // Hard fail so CI or scripted installs stop here
+            exit(self::FAILURE);
+        }
+
         $this->callSilent('vendor:publish', [
             '--provider' => "Doyosi\\EasyEvent\\EasyEventServiceProvider",
             '--tag' => 'easy-event-config',
@@ -192,6 +210,10 @@ class InstallCommand extends Command
 
         if ($cmd = $this->option('run-npm')) {
             $this->runNpm($cmd);
+        }
+
+        if ($this->option('purge-lang')) {
+            $this->purgeLanguageLines();
         }
 
         $this->info('✓ EasyEvent uninstall complete.');
@@ -406,4 +428,88 @@ class InstallCommand extends Command
         $this->call('db:seed', ['--class' => $class]);
         $this->info('✓ Seeded sample events');
     }
+
+    /**
+     * Seed Spatie\TranslationLoader language lines (if package is installed).
+     * Safe to run multiple times: uses updateOrCreate.
+     */
+    protected function seedLanguageLines(): void
+    {
+        if (! class_exists(\Spatie\TranslationLoader\LanguageLine::class)) {
+            $this->warn('Spatie Translation Loader not installed. Skipping language lines.');
+            $this->line('  Install with: composer require spatie/laravel-translation-loader');
+            return;
+        }
+
+        $count = 0;
+        foreach ($this->languageLinesMap() as $group => $pairs) {
+            foreach ($pairs as $key => $text) {
+                \Spatie\TranslationLoader\LanguageLine::updateOrCreate(
+                    ['group' => $group, 'key' => $key],
+                    ['text'  => $text] // ['en' => '...', 'tr' => '...']
+                );
+                $count++;
+            }
+        }
+
+        $this->info("✓ Seeded {$count} language line(s) into spatie language_lines");
+    }
+
+    /**
+     * Remove EasyEvent language lines from Spatie table (if installed).
+     */
+    protected function purgeLanguageLines(): void
+    {
+        if (! class_exists(\Spatie\TranslationLoader\LanguageLine::class)) {
+            $this->line('  (spatie/laravel-translation-loader not installed; skipping purge)');
+            return;
+        }
+
+        $groups = array_keys($this->languageLinesMap());
+        \Spatie\TranslationLoader\LanguageLine::query()->whereIn('group', $groups)->delete();
+        $this->info('  ✓ Removed EasyEvent language lines from spatie language_lines');
+    }
+
+    /**
+     * All translatable strings for Spatie LanguageLine.
+     * Keys mirror your package namespaces so __('easy-event::...') keeps working.
+     *
+     * @return array<string, array<string, array<string,string>>>
+     */
+    protected function languageLinesMap(): array
+    {
+        return [
+            'easy-event::messages' => [
+                'event'       => ['en' => 'Event',        'tr' => 'Etkinlik'],
+                'events'      => ['en' => 'Events',       'tr' => 'Etkinlikler'],
+                'today'       => ['en' => 'Today',        'tr' => 'Bugün'],
+                'this_month'  => ['en' => 'This month',   'tr' => 'Bu ay'],
+                'upcoming'    => ['en' => 'Upcoming',     'tr' => 'Yaklaşan'],
+                'past'        => ['en' => 'Past',         'tr' => 'Geçmiş'],
+                'no_events'   => ['en' => 'No events.',   'tr' => 'Etkinlik yok.'],
+                'title'       => ['en' => 'Title',        'tr' => 'Başlık'],
+                'type'        => ['en' => 'Type',         'tr' => 'Tür'],
+                'starts_at'   => ['en' => 'Starts at',    'tr' => 'Başlangıç'],
+                'ends_at'     => ['en' => 'Ends at',      'tr' => 'Bitiş'],
+                'location'    => ['en' => 'Location',     'tr' => 'Konum'],
+                'status'      => ['en' => 'Status',       'tr' => 'Durum'],
+                'created'     => ['en' => 'Event created.','tr' => 'Etkinlik oluşturuldu.'],
+                'updated'     => ['en' => 'Event updated.','tr' => 'Etkinlik güncellendi.'],
+                'deleted'     => ['en' => 'Event deleted.','tr' => 'Etkinlik silindi.'],
+            ],
+            'easy-event::widget' => [
+                'no_events'   => ['en' => 'No events.',   'tr' => 'Etkinlik yok.'],
+            ],
+            'easy-event::validation' => [
+                'required'    => ['en' => ':attribute is required.',        'tr' => ':attribute alanı zorunludur.'],
+                'date'        => ['en' => ':attribute must be a valid date.','tr' => ':attribute geçerli bir tarih olmalıdır.'],
+                'attributes.title'     => ['en' => 'title',     'tr' => 'başlık'],
+                'attributes.type'      => ['en' => 'type',      'tr' => 'tür'],
+                'attributes.starts_at' => ['en' => 'start date','tr' => 'başlangıç tarihi'],
+                'attributes.ends_at'   => ['en' => 'end date',  'tr' => 'bitiş tarihi'],
+                'attributes.status'    => ['en' => 'status',    'tr' => 'durum'],
+            ],
+        ];
+    }
+
 }
