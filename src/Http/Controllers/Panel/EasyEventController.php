@@ -14,10 +14,8 @@ class EasyEventController extends Controller
         $events = EasyEvent::query()->orderByDesc('created_at')
             ->paginate(config('easy-event.pagination', 15));
 
-        $config = config('easy-event');
-        $viewExtend = "".$config['web_extends_view'] ?? 'layouts.panel';
 
-        return view('easy-event::panel.index', compact('events'))->extends($viewExtend)->section('content');
+        return view('easy-event::panel.index', compact('events'));
     }
 
     public function create()
@@ -37,13 +35,11 @@ class EasyEventController extends Controller
     {
         // Ensure the event exists and is editable
 
-        $config = config('easy-event');
-        $viewExtend = "".$config['web_extends_view'] ?? 'layouts.panel';
         if (!$event->exists) {
             return redirect()->route('panel.easy-events.index')
                 ->with('error', 'Event not found.');
         }
-        return view('easy-event::panel.index', compact('event'))->extends($viewExtend)->section('content');
+        return view('easy-event::panel.index', compact('event'));
     }
 
     public function update(Request $request, EasyEvent $event)

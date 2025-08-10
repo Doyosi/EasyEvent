@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends(config('easy-event.panel_extends_view'))
 
 @section('content')
 <div class="container mx-auto p-4">
