@@ -5,6 +5,7 @@ namespace Doyosi\EasyEvent\Console;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
 use Symfony\Component\Process\Process;
+use Spatie\Translatable\Translatable;
 
 class InstallCommand extends Command
 {
@@ -18,6 +19,8 @@ class InstallCommand extends Command
         {--drop-table : With --uninstall, drop the easy_events table}
         {--restore-vite= : Rewrite vite.config.js input from manifest (default: doyosi.vite.json)}
         {--backup : Create a .bak copy of vite.config.js before modifications}
+        {--purge-lang : With --uninstall, remove EasyEvent language lines from Spatie table}
+        {--seed-lang : Seed Spatie language lines after install}
         {--force : Do not ask for confirmation on destructive actions}';
 
     protected $description = 'Install / uninstall Doyosi EasyEvent and manage Vite wiring.';
@@ -70,13 +73,14 @@ class InstallCommand extends Command
 
     protected function doInstall(): void
     {
-        if (! class_exists(\Spatie\Translatable\HasTranslations::class)) {
+        if (! class_exists(Translatable::class)) {
             $this->error('Missing dependency: spatie/laravel-translatable');
             $this->line('Install it with:');
             $this->line('  composer require spatie/laravel-translatable:^6.0');
             // Hard fail so CI or scripted installs stop here
             exit(self::FAILURE);
         }
+
 
         if (! class_exists(\Spatie\TranslationLoader\LanguageLine::class)) {
             $this->error('Spatie Translation Loader not installed.');

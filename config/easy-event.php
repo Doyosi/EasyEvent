@@ -36,4 +36,7 @@ return [
 
     // Default event types (you can customize or extend in your app)
     'types' => ['meeting', 'holiday', 'webinar', 'workshop', 'custom'],
+
+    'panel_extends_view' => 'layouts.panel', // default panel layout to extend
+    'web_extends_view' => 'layouts.app', // default web layout to extend
 ];

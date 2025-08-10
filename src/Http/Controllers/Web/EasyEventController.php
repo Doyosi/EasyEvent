@@ -14,7 +14,10 @@ class EasyEventController extends Controller
             ->upcoming()
             ->paginate(config('easy-event.pagination', 15));
 
-        return view('easy-event::web.index', compact('events'));
+        $config = config('easy-event');
+        $viewExtend = "".$config['web_extends_view'] ?? 'layouts.app';
+
+        return view('easy-event::web.index', compact('events'))->extends($viewExtend)->section('content');
     }
 
     public function show(EasyEvent $event)
